@@ -36,9 +36,9 @@ This repository is shared for informational purposes only and does not grant any
 
 # Understanding the S7-PLC AJAX Variable Interface
 This document explains how the PLC web interface works in simple terms for someone with beginner HTML and JavaScript experience.
+![screenshot](imageFolder/Webpage_Screenshot.png)
 
 ## Overview
-![screenshot](imageFolder/Webpage_Screenshot.png)
 This Web interface connects to a S7-1200/1500 Siemens S7 PLC (Programmable Logic Controller). It allows you to:
 1. View PLC variable values in real-time
 2. Change these values directly from your browser
