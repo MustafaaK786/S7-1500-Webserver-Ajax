@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- AWP_In_Variable Name='"MyVariables".boolValue' -->
+    <!-- AWP_In_Variable Name='"MyVariables".intValue' -->
+    <!-- AWP_In_Variable Name='"MyVariables".stringValue' -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S7-PLC AJAX Variable Interface</title>
+    <style>
+        /* CSS Variables for consistent theming */
+        :root {
+            --primary-color: #0066cc;
+            --primary-hover: #004499;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --warning-color: #ffc107;
+            --light-bg: #f5f5f5;
+            --white: #ffffff;
+            --border-color: #ddd;
+            --text-color: #333;
+            --text-muted: #666;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --border-radius: 8px;
+            --font-family: Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body { 
+            font-family: var(--font-family);
+            margin: 10px;
+            background-color: var(--light-bg);
+            line-height: 1.5;
+        }
+        
+        .main-container { 
+            display: grid;
+            grid-template-columns: 400px 650px;
+            grid-gap: 20px;
+            max-width: 1110px;
+            margin: 0 auto;
+            background-color: var(--white);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+		
+		p {
+			margin: 0;
+		}
+        
+        .title-header {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+        }
+        
+        .title-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8rem;
+        }
+        
+        .title-header p {
+            color: var(--text-muted);
+            margin: 5px 0 0 0;
+        }
+        
+        .variables-panel, .debug-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .debug-panel {
+            height: fit-content;
+        }
+        
+        .variable-box {
+			margin-top: 10px;
+			border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #fafafa;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .variable-box h6 {
+            margin: 0 0 10px 0;
+            color: var(--text-color);
+            font-size: 1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .value-display { 
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 0.9em;
+        }
+        
+        button { 
+            padding: 8px 15px;
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
+        }
+        
+        button:hover { 
+            background-color: var(--primary-hover);
+        }
+        
+        button:disabled {
+            background-color: var(--text-muted);
+            cursor: not-allowed;
+        }
+        
+        input[type="text"], input[type="number"] { 
+            padding: 8px;
+            width: 180px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.2);
+        }
+        
+        .status { 
+            color: var(--success-color);
+            margin-top: 5px;
+            display: none;
+            font-size: 0.7em;
+            font-style: italic;
+        }
+        
+        .status.error {
+            color: var(--error-color);
+        }
+        
+        #variablesPanel, #debugPanel { 
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            height: 100%;
+            min-height: 500px;
+        }
+        
+        #variablesPanel h2, #debugPanel h2 { 
+            color: var(--text-color);
+            margin-top: 0;
+            font-size: 1.2em;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 8px;
+        }
+        
+        #debugContent { 
+            max-height: 450px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            font-size: 0.85em;
+            line-height: 1.3;
+        }
+        
+        .debug-entry { 
+            border-bottom: 1px dashed #ccc;
+            padding: 5px 0;
+            word-wrap: break-word;
+        }
+        
+        .debug-entry .timestamp { 
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+        
+        .debug-entry .request { 
+            color: #007700;
+        }
+        
+        .debug-entry .response { 
+            color: #0000cc;
+        }
+        
+        .debug-entry .error { 
+            color: var(--error-color);
+        }
+        
+        .debug-entry .url { 
+            color: #770077;
+        }
+        
+        .debug-controls, .update-controls { 
+            margin-top: 10px;
+            padding: 10px;
+            background-color: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+        }
+        
+        .debug-controls button, .update-controls button {
+            margin-right: 8px;
+            margin-bottom: 5px;
+            font-size: 0.85em;
+            padding: 6px 12px;
+        }
+        
+        .debug-controls input[type="number"], .update-controls input[type="number"] { 
+            width: 80px;
+            font-size: 0.85em;
+            padding: 4px;
+        }
+        
+        .current-count, .current-rate { 
+            font-weight: bold;
+            color: var(--text-color);
+            margin-left: 10px;
+            font-size: 0.9em;
+        }
+        
+        .paused-indicator { 
+            color: var(--error-color);
+            font-weight: bold;
+            display: none;
+            margin-left: 10px;
+        }
+        
+        .update-controls h6 { 
+            margin: 0 0 5px 0;
+            color: var(--text-color);
+            font-size: 1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        
+        .update-controls small, .debug-controls small {
+            color: var(--text-muted);
+            font-size: 0.75em;
+        }
+
+        /* Loading indicator */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1080px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                max-width: 650px;
+            }
+            
+            input[type="text"], input[type="number"] { 
+                width: 150px;
+            }
+        }
+
+        @media (max-width: 650px) {
+            .main-container {
+                margin: 5px;
+                padding: 15px;
+            }
+            
+            input[type="text"], input[type="number"] { 
+                width: 120px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="title-header">
+            <h1>S7-PLC Variable Interface</h1>
+            <p>Real-time monitoring and control using AJAX communication</p>
+        </div>
+        
+        <div class="variables-panel">
+            <div id="variablesPanel">
+                <h2>Variable Information</h2>
+                
+                <div class="variable-box">
+                    <h6>Boolean Variable: <span id="boolDisplay" class="value-display">false</span></h6>
+                    <input type="checkbox" id="boolInput" onchange="toggleBool()">
+                    <label for="boolInput">Toggle value</label>
+                    <div id="boolStatus" class="status"></div>
+                </div>
+                
+                <div class="variable-box">
+                    <h6>Integer Variable: <span id="intDisplay" class="value-display">0</span></h6>
+                    <input type="number" id="intInput" placeholder="Enter new value">
+                    <button onclick="writeVariableFromInput('intValue', 'intInput')">Update</button>
+                    <div id="intStatus" class="status"></div>
+                </div>
+                
+                <div class="variable-box">
+                    <h6>String Variable: <span id="stringDisplay" class="value-display"></span></h6>
+                    <input type="text" id="stringInput" placeholder="Enter new text">
+                    <button onclick="writeVariableFromInput('stringValue', 'stringInput')">Update</button>
+                    <div id="stringStatus" class="status"></div>
+                </div>
+                
+                <div class="update-controls">
+                    <h6>Update Rate Control: <span id="currentUpdateRate" class="current-rate">1000ms</span></h6>
+					<p><small>Range: 10ms - 60000ms (0.01 - 60 seconds)</small></p>
+                    <label for="updateRateInput">Update Rate (ms):</label>
+                    <input type="number" id="updateRateInput" min="10" max="60000">
+                    <button onclick="updateUpdateRate()">Apply</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="debug-panel">
+            <div id="debugPanel">
+                <h2>Debug Information <span id="pausedIndicator" class="paused-indicator">[PAUSED]</span></h2>
+                <div id="debugContent"></div>
+                <div class="debug-controls">
+                    <button onclick="clearDebug()">Clear Log</button>
+                    <button id="pauseResumeBtn" onclick="toggleLogging()">Pause Logging</button>
+                    <button id="toggleDebugBtn" onclick="toggleDebug()">Hide Debug Info</button>
+                    <br>
+					<p><small>Limit the log size to below 1000</small></p>
+                    <label for="maxDebugEntriesInput">Max Entries:</label>
+                    <input type="number" id="maxDebugEntriesInput" min="1" max="1000">
+                    <button onclick="updateMaxDebugEntries()">Apply</button>
+                    <span class="current-count">Current: <span id="currentDebugCount">0</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        'use strict';
+
+        // Application state
+        const AppState = {
+            debugEnabled: true,
+            loggingPaused: false,
+            debugEntries: [],
+            maxDebugEntries: 50,
+            updateRate: 1000,
+            nextTimerID: null,
+            pageRequested: false,
+            currentValues: {
+                boolValue: false,
+                intValue: 0,
+                stringValue: ""
+            }
+        };
+
+        // Utility functions
+        const Utils = {
+            decodeHTMLEntities(text) {
+                if (!text) return '';
+                const textarea = document.createElement('textarea');
+                textarea.innerHTML = text;
+                return textarea.value.replace(/^['"]|['"]$/g, '');
+            },
+
+            cleanString(str) {
+                if (typeof str !== "string") return str;
+                return this.decodeHTMLEntities(str).replace(/^['"]|['"]$/g, '');
+            },
+
+            formatTimestamp() {
+                const now = new Date();
+                return now.toLocaleTimeString() + "." + now.getMilliseconds().toString().padStart(3, '0');
+            },
+
+            validateInput(value, min, max, defaultValue) {
+                const num = parseInt(value, 10);
+                if (isNaN(num) || num < min || num > max) {
+                    return { valid: false, value: defaultValue };
+                }
+                return { valid: true, value: num };
+            }
+        };
+
+        // HTTP Request handling
+        const HttpClient = {
+            createXMLHttpRequest() {
+                try {
+                    if (window.XMLHttpRequest) {
+                        return new XMLHttpRequest();
+                    } else if (window.ActiveXObject) {
+                        try {
+                            return new ActiveXObject("Msxml2.XMLHTTP");
+                        } catch (e) {
+                            return new ActiveXObject("Microsoft.XMLHTTP");
+                        }
+                    }
+                } catch (e) {
+                    return null;
+                }
+            },
+
+            request(url, callback, isXML = false) {
+                const xhr = this.createXMLHttpRequest();
+                if (!xhr) {
+                    Logger.log("ERROR", "Cannot create XMLHttpRequest", null);
+                    return false;
+                }
+
+                Logger.log("REQUEST", "Sending request to", url);
+                
+                xhr.open('GET', url, true);
+                xhr.onreadystatechange = () => {
+                    if (xhr.readyState === 4) {
+                        const responseInfo = {
+                            status: xhr.status,
+                            responseText: xhr.responseText,
+                            url: url
+                        };
+                        
+                        if (xhr.status === 200) {
+                            Logger.log("RESPONSE", `Received response from ${url}`, responseInfo);
+                        } else {
+                            Logger.log("ERROR", `Request failed with status ${xhr.status}`, responseInfo);
+                        }
+                        
+                        if (callback) {
+                            callback(xhr.responseText, xhr.status);
+                        }
+                    }
+                };
+                
+                xhr.setRequestHeader('If-Modified-Since', 'Sat, 1 Jan 2000 00:00:00 GMT');
+                xhr.send(null);
+                return true;
+            }
+        };
+
+        // Debug logging system
+        const Logger = {
+            log(type, message, data) {
+                if (!AppState.debugEnabled || AppState.loggingPaused) return;
+                
+                const entry = {
+                    timestamp: Utils.formatTimestamp(),
+                    type: type,
+                    message: message,
+                    data: data
+                };
+                
+                AppState.debugEntries.unshift(entry);
+                
+                if (AppState.debugEntries.length > AppState.maxDebugEntries) {
+                    AppState.debugEntries.pop();
+                }
+                
+                this.updateDisplay();
+                this.updateCount();
+            },
+
+            updateDisplay() {
+                if (!AppState.debugEnabled) return;
+                
+                const debugContent = document.getElementById("debugContent");
+                if (!debugContent) return;
+                
+                debugContent.innerHTML = "";
+                
+                AppState.debugEntries.forEach(entry => {
+                    const entryDiv = document.createElement("div");
+                    entryDiv.className = "debug-entry";
+                    
+                    const classType = entry.type.toLowerCase();
+                    let content = `<span class='timestamp'>${entry.timestamp}</span> `;
+                    content += `<span class='${classType}'>[${entry.type}]</span> `;
+                    content += entry.message;
+                    
+                    if (entry.data !== undefined && entry.data !== null) {
+                        content += `: <pre>${JSON.stringify(entry.data, null, 2)}</pre>`;
+                    }
+                    
+                    entryDiv.innerHTML = content;
+                    debugContent.appendChild(entryDiv);
+                });
+            },
+
+            updateCount() {
+                const countElement = document.getElementById("currentDebugCount");
+                if (countElement) {
+                    countElement.textContent = AppState.debugEntries.length;
+                }
+            }
+        };
+
+        // PLC Variable operations
+        const PLCVariables = {
+            variableMap: {
+                'boolValue': '"MyVariables".boolValue',
+                'intValue': '"MyVariables".intValue',
+                'stringValue': '"MyVariables".stringValue'
+            },
+
+            write(variableName, value) {
+                Logger.log("FUNCTION", "writeVariable() called", { variable: variableName, value: value });
+                
+                const fullVariableName = this.variableMap[variableName] || variableName;
+                const encodedVariable = encodeURIComponent(fullVariableName);
+                const encodedValue = encodeURIComponent(value);
+                const url = `?${encodedVariable}=${encodedValue}&${Math.random()}`;
+                
+                Logger.log("URL", "Sending AJAX request to URL", url);
+                Logger.log("WRITE", "Writing variable to PLC", {
+                    variable: variableName,
+                    fullVariable: fullVariableName,
+                    value: value,
+                    encodedValue: encodedValue
+                });
+                
+                return HttpClient.request(url, (response, status) => {
+                    const statusElement = document.getElementById(`${variableName}Status`);
+                    
+                    if (status === 200) {
+                        Logger.log("SUCCESS", "Variable updated successfully", { response, status });
+                        this.showStatus(statusElement, "Value updated successfully!", false);
+                    } else {
+                        Logger.log("ERROR", `Error updating value: ${status}`, { response, status });
+                        this.showStatus(statusElement, `Error updating value: ${status}`, true);
+                    }
+                });
+            },
+
+            showStatus(element, message, isError = false) {
+                if (!element) return;
+                
+                element.className = isError ? "status error" : "status";
+                element.style.display = "block";
+                element.textContent = message;
+                
+                setTimeout(() => {
+                    element.style.display = "none";
+                }, 3000);
+            }
+        };
+
+        // UI Update functions
+        const UIUpdater = {
+            updateDisplay() {
+                const elements = {
+                    bool: document.getElementById("boolDisplay"),
+                    int: document.getElementById("intDisplay"),
+                    string: document.getElementById("stringDisplay"),
+                    checkbox: document.getElementById("boolInput")
+                };
+                
+                if (elements.bool) {
+                    elements.bool.textContent = AppState.currentValues.boolValue ? "TRUE" : "FALSE";
+                }
+                
+                if (elements.int) {
+                    elements.int.textContent = AppState.currentValues.intValue;
+                }
+                
+                if (elements.string) {
+                    elements.string.textContent = AppState.currentValues.stringValue;
+                }
+                
+                if (elements.checkbox && elements.checkbox.checked !== AppState.currentValues.boolValue) {
+                    elements.checkbox.checked = AppState.currentValues.boolValue;
+                }
+            },
+
+            updateCurrentRate() {
+                const rateElement = document.getElementById("currentUpdateRate");
+                if (rateElement) {
+                    rateElement.textContent = `${AppState.updateRate}ms`;
+                }
+            }
+        };
+
+        // Timer and polling functions
+        const PollingSystem = {
+            start() {
+                AppState.nextTimerID = setTimeout(() => this.onTimer(), AppState.updateRate);
+            },
+
+            onTimer() {
+                if (!AppState.pageRequested) {
+                    AppState.pageRequested = true;
+                    HttpClient.request(`read_variables.dat?${Date.now()}`, (response, status) => {
+                        this.updateCallback(response, status);
+                    });
+                }
+                AppState.nextTimerID = setTimeout(() => this.onTimer(), AppState.updateRate);
+            },
+
+            updateCallback(response, status) {
+                AppState.pageRequested = false;
+                
+                if (status === 200 && response) {
+                    try {
+                        const cleanResponse = response.trim();
+                        
+                        Logger.log("RAW", "Raw .dat response", {
+                            raw: response,
+                            cleaned: cleanResponse
+                        });
+                        
+                        const matches = cleanResponse.match(/([^\s]+)\s+([^\s]+)\s+(.*)/);
+                        
+                        if (matches && matches.length >= 4) {
+                            AppState.currentValues.boolValue = (matches[1].toLowerCase() === "true" || matches[1] === "1");
+                            AppState.currentValues.intValue = parseInt(matches[2], 10);
+                            AppState.currentValues.stringValue = Utils.cleanString(matches[3]);
+                            
+                            Logger.log("UPDATE", "Values updated from .dat file (after cleaning)", AppState.currentValues);
+                            UIUpdater.updateDisplay();
+                        } else {
+                            Logger.log("ERROR", "Invalid data format in .dat file", {
+                                response: response,
+                                matches: matches
+                            });
+                        }
+                    } catch (e) {
+                        Logger.log("ERROR", "Error parsing variable_values.dat response", {
+                            error: e.toString(),
+                            response: response
+                        });
+                    }
+                } else if (status !== 200) {
+                    Logger.log("ERROR", "Failed to load .dat file", {
+                        status: status,
+                        response: response
+                    });
+                }
+            }
+        };
+
+        // Global functions for HTML event handlers
+        function writeVariableFromInput(variableName, inputId) {
+            const value = document.getElementById(inputId).value;
+            Logger.log("INPUT", "writeVariableFromInput() called", {
+                variable: variableName,
+                inputId: inputId,
+                value: value
+            });
+            PLCVariables.write(variableName, value);
+        }
+
+        function toggleBool() {
+            const newValue = document.getElementById("boolInput").checked;
+            const url = `?%22MyVariables%22.boolValue=${newValue ? "true" : "false"}&${Math.random()}`;
+            
+            Logger.log("URL", "Sending boolean toggle AJAX request to URL", url);
+            
+            HttpClient.request(url, (response, status) => {
+                if (status === 200) {
+                    document.getElementById("boolDisplay").textContent = newValue ? "TRUE" : "FALSE";
+                    Logger.log("SUCCESS", "Boolean toggle successful", { newValue });
+                } else {
+                    Logger.log("ERROR", `Boolean toggle failed with status: ${status}`, { response, status });
+                }
+            });
+        }
+
+        function updateUpdateRate() {
+            const inputElement = document.getElementById("updateRateInput");
+            if (!inputElement) return;
+            
+            const validation = Utils.validateInput(inputElement.value, 10, 60000, AppState.updateRate);
+            
+            if (!validation.valid) {
+                alert("Please enter a valid number between 10ms and 60000ms");
+                inputElement.value = AppState.updateRate;
+                return;
+            }
+            
+            const oldRate = AppState.updateRate;
+            AppState.updateRate = validation.value;
+            
+            if (AppState.nextTimerID) {
+                clearTimeout(AppState.nextTimerID);
+                AppState.nextTimerID = null;
+            }
+            
+            AppState.nextTimerID = setTimeout(() => PollingSystem.onTimer(), AppState.updateRate);
+            UIUpdater.updateCurrentRate();
+            
+            Logger.log("CONFIG", "Update rate changed", {
+                oldRate: `${oldRate}ms`,
+                newRate: `${validation.value}ms`
+            });
+        }
+
+        function updateMaxDebugEntries() {
+            const inputElement = document.getElementById("maxDebugEntriesInput");
+            if (!inputElement) return;
+            
+            const validation = Utils.validateInput(inputElement.value, 1, 1000, AppState.maxDebugEntries);
+            
+            if (!validation.valid) {
+                alert("Please enter a valid number between 1 and 1000");
+                inputElement.value = AppState.maxDebugEntries;
+                return;
+            }
+            
+            const oldMax = AppState.maxDebugEntries;
+            AppState.maxDebugEntries = validation.value;
+            
+            if (AppState.debugEntries.length > AppState.maxDebugEntries) {
+                AppState.debugEntries = AppState.debugEntries.slice(0, AppState.maxDebugEntries);
+                Logger.updateDisplay();
+            }
+            
+            Logger.updateCount();
+            Logger.log("CONFIG", "Max debug entries changed", {
+                oldMax: oldMax,
+                newMax: validation.value,
+                currentEntries: AppState.debugEntries.length
+            });
+        }
+
+        function clearDebug() {
+            AppState.debugEntries = [];
+            Logger.updateDisplay();
+            Logger.updateCount();
+        }
+
+        function toggleDebug() {
+            AppState.debugEnabled = !AppState.debugEnabled;
+            document.getElementById("debugContent").style.display = AppState.debugEnabled ? "block" : "none";
+            document.getElementById("toggleDebugBtn").textContent = AppState.debugEnabled ? "Hide Debug Info" : "Show Debug Info";
+        }
+
+        function toggleLogging() {
+            AppState.loggingPaused = !AppState.loggingPaused;
+            document.getElementById("pauseResumeBtn").textContent = AppState.loggingPaused ? "Resume Logging" : "Pause Logging";
+            document.getElementById("pausedIndicator").style.display = AppState.loggingPaused ? "inline" : "none";
+            
+            if (!AppState.loggingPaused) {
+                Logger.log("INFO", "Logging resumed", null);
+            }
+        }
+
+        // Initialize application
+        function initializeApp() {
+            // Initialize debug controls
+            const maxEntriesInput = document.getElementById("maxDebugEntriesInput");
+            if (maxEntriesInput) {
+                maxEntriesInput.value = AppState.maxDebugEntries;
+            }
+            
+            // Initialize update controls
+            const updateRateInput = document.getElementById("updateRateInput");
+            if (updateRateInput) {
+                updateRateInput.value = AppState.updateRate;
+            }
+            
+            // Set initial values
+            AppState.currentValues.stringValue = Utils.cleanString("");
+            
+            Logger.log("INFO", "Application initialized", AppState.currentValues);
+            Logger.updateCount();
+            UIUpdater.updateDisplay();
+            UIUpdater.updateCurrentRate();
+            
+            // Start polling
+            PollingSystem.start();
+        }
+
+        // Start application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+sequenceDiagram
+    participant User as User
+    participant Browser as Web Browser<br/>(JavaScript)
+    participant WebServer as Web Server<br/>(S7 PLC Web Server)
+    participant PLC as S7 PLC<br/>(Variable Memory)
+
+    Note over Browser,PLC: Initial Page Load & Setup
+    User->>Browser: Opens webpage URL
+    Browser->>WebServer: HTTP GET request for HTML page
+    WebServer->>Browser: Returns HTML with embedded PLC variables<br/>(:="MyVariables".boolValue: etc.)
+    Browser->>Browser: Parse HTML, initialize JavaScript<br/>Execute Start() function
+    Browser->>Browser: Set initial values from embedded PLC data<br/>Start periodic timer (1000ms default)
+
+    Note over Browser,PLC: Continuous Data Polling (Read Operations)
+    loop Every 1000ms (configurable)
+        Browser->>WebServer: AJAX GET: read_variables.dat?timestamp
+        WebServer->>PLC: Read MyVariables.boolValue<br/>Read MyVariables.intValue<br/>Read MyVariables.stringValue
+        PLC->>WebServer: Return current variable values
+        WebServer->>Browser: Response: "true 42 Hello World"<br/>(space-separated values)
+        Browser->>Browser: Parse response data<br/>Update g_currentValues object
+        Browser->>Browser: Update DOM elements<br/>(displays, input states)
+        Browser->>Browser: Log debug information
+    end
+
+    Note over Browser,PLC: User Write Operations
+
+    rect rgb(240, 248, 255)
+        Note over Browser,PLC: Boolean Variable Toggle
+        User->>Browser: Click checkbox (Toggle Boolean)
+        Browser->>Browser: Get checkbox state (true/false)
+        Browser->>WebServer: AJAX GET: ?%22MyVariables%22.boolValue=true&random
+        WebServer->>PLC: Write true to MyVariables.boolValue
+        PLC->>WebServer: Acknowledge write operation
+        WebServer->>Browser: HTTP 200 OK response
+        Browser->>Browser: Update display immediately<br/>Show success status (3 seconds)
+        Browser->>Browser: Log successful write operation
+    end
+
+    rect rgb(248, 255, 240)
+        Note over Browser,PLC: Integer Variable Update
+        User->>Browser: Enter number in input field
+        User->>Browser: Click "Update" button
+        Browser->>Browser: Get value from intInput field<br/>Call writeVariableFromInput()
+        Browser->>WebServer: AJAX GET: ?"MyVariables".intValue=123&random
+        WebServer->>PLC: Write 123 to MyVariables.intValue
+        PLC->>WebServer: Acknowledge write operation
+        WebServer->>Browser: HTTP 200 OK response
+        Browser->>Browser: Show success status (3 seconds)<br/>"Value updated successfully!"
+        Browser->>Browser: Log successful write operation
+    end
+
+    rect rgb(255, 248, 240)
+        Note over Browser,PLC: String Variable Update
+        User->>Browser: Enter text in input field
+        User->>Browser: Click "Update" button
+        Browser->>Browser: Get value from stringInput field<br/>URL encode the string value
+        Browser->>WebServer: AJAX GET: ?"MyVariables".stringValue=Hello%20PLC&random
+        WebServer->>PLC: Write "Hello PLC" to MyVariables.stringValue
+        PLC->>WebServer: Acknowledge write operation
+        WebServer->>Browser: HTTP 200 OK response
+        Browser->>Browser: Show success status (3 seconds)
+        Browser->>Browser: Log successful write operation
+    end
+
+    Note over Browser,PLC: Error Handling Scenarios
+
+    rect rgb(255, 240, 240)
+        Note over Browser,PLC: Communication Error Example
+        Browser->>WebServer: AJAX request (network timeout)
+        WebServer-->>Browser: No response / HTTP error
+        Browser->>Browser: Log error in debug panel<br/>Show error alert to user
+        Browser->>Browser: Continue with next timer cycle
+    end
+
+    Note over Browser,PLC: Debug and Configuration
+
+    rect rgb(248, 240, 255)
+        Note over Browser,PLC: Configuration Changes
+        User->>Browser: Change update rate (500ms)
+        Browser->>Browser: Validate input range (10-60000ms)<br/>Cancel current timer
+        Browser->>Browser: Start new timer with 500ms interval<br/>Log configuration change
+        User->>Browser: Pause/Resume logging
+        Browser->>Browser: Toggle g_loggingPaused flag<br/>Update UI indicators
+    end
+
+    Note over Browser,PLC: Data Processing Details
+
+    rect rgb(250, 250, 250)
+        Note over Browser,WebServer: Data Format Handling
+        Note right of Browser: Read Response Processing:<br/>1. Raw: "true 42 Hello World"<br/>2. Split by spaces<br/>3. Parse boolean (true/1)<br/>4. Parse integer (42)<br/>5. Clean string (HTML decode)<br/>6. Update UI displays
+        
+        Note right of Browser: Write Request Formatting:<br/>1. URL encode variable name<br/>2. URL encode value<br/>3. Add cache-busting random<br/>4. Send as GET parameters<br/>5. Handle special characters
+    end
