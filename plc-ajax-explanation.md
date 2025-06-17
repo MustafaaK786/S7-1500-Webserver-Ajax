@@ -11,7 +11,7 @@ The web interface you're using connects to a Siemens S7 PLC (Programmable Logic 
 
 ## The Three Files in this Package
 
-1. **plc-ajax-with-debug.html** - The main web interface with debug capabilities
+1. **index.html** - The main web interface with debug capabilities
 2. **variable_values.dat** - A file that provides updated PLC values (served by the PLC)
 3. **explanation.md** - This explanation document
 
